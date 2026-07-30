@@ -1,4 +1,4 @@
-package com.example.entertainment.home.popularMovies.domain
+package com.example.popular.domain
 
 import com.example.entertainment.home.MediaItem
 import com.example.entertainment.home.MediaListDomainModel

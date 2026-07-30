@@ -1,4 +1,4 @@
-package com.example.entertainment.home.popularMovies.domain
+package com.example.popular.domain
 
 import com.example.entertainment.core.domain.Result
 import com.example.entertainment.core.domain.TRPError

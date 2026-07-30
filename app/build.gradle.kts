@@ -1,3 +1,4 @@
+import org.gradle.kotlin.dsl.implementation
 import java.util.Properties
 
 plugins {
@@ -60,6 +61,11 @@ android {
 }
 
 dependencies {
+    implementation(project(":core"))
+    implementation(project(":feature:popular"))
+    implementation(project(":feature:toprated"))
+
+
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.foundation)

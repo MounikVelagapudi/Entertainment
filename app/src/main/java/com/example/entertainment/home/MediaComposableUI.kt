@@ -85,8 +85,13 @@ fun MediaComposableUI(
         Spacer(modifier = Modifier.padding(horizontal = 2.dp))
 
         LazyRow(modifier = Modifier.testTag("media_row_$key")) {
-            items(uiModel.results) { resultData ->
-                MediaMovieItem(resultData, Modifier, isTappable = isTappable, onEvent = onEvent)
+            items(
+                uiModel.results,
+                key = { it.id } // Stable key prevents recomposition
+                /* IMP: key = { it.id } is not mandatory, but this will avoid recomposition when one of the item in the list changes,
+                else it keeps recomposing even if one of the item gets updates in the list */
+            ) { item ->
+                MediaMovieItem(item, Modifier, isTappable = isTappable, onEvent = onEvent)
             }
         }
     }

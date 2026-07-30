@@ -1,5 +1,5 @@
 plugins {
-    alias(libs.plugins.android.application)
+    alias(libs.plugins.android.library)
 }
 
 android {
@@ -11,13 +11,10 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.popular"
         minSdk = 24
-        targetSdk = 37
-        versionCode = 1
-        versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles("proguard-rules.pro")
     }
 
     buildTypes {
@@ -36,6 +33,10 @@ android {
 }
 
 dependencies {
+    implementation(project(":core"))
+
+    implementation(libs.hilt.android)
+   // ksp(libs.hilt.compiler)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.ktx)
     implementation(libs.material)

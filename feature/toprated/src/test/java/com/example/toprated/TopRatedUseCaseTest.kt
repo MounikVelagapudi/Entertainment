@@ -1,14 +1,12 @@
-package com.example.entertainment.home.topRatedMovies
+package com.example.toprated
 
 import com.example.entertainment.core.domain.NetworkError
 import com.example.entertainment.core.domain.Result
-import com.example.entertainment.core.domain.TRPError
-import com.example.entertainment.home.topRated.topRated.domain.TopRatedDomainModel
-import com.example.entertainment.home.topRated.topRated.domain.TopRatedMovie
-import com.example.entertainment.home.topRated.topRated.domain.TopRatedRepo
-import com.example.entertainment.home.topRated.topRated.domain.TopRatedUseCase
+import com.example.toprated.domain.TopRatedDomainModel
+import com.example.toprated.domain.TopRatedMovie
+import com.example.toprated.domain.TopRatedRepo
+import com.example.toprated.domain.TopRatedUseCase
 import io.mockk.coEvery
-import io.mockk.impl.annotations.MockK
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals

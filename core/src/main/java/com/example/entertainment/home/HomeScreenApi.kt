@@ -1,8 +1,8 @@
 package com.example.entertainment.home
 
-import com.example.entertainment.BuildConfig
+import com.example.core.BuildConfig
+import com.example.entertainment.core.data.networking.dto.toprated.TopRatedDTO
 import com.example.entertainment.home.popularMovies.data.PopularMovieDTO
-import com.example.entertainment.home.topRated.topRated.data.TopRatedDTO
 import com.example.entertainment.home.trendingMovies.data.TrendingMovieDTO
 import retrofit2.Response
 import retrofit2.http.GET

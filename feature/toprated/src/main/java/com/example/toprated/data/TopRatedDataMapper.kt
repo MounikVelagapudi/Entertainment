@@ -1,5 +1,7 @@
 package com.example.toprated.data
 
+import com.example.entertainment.core.data.networking.dto.toprated.Result
+import com.example.entertainment.core.data.networking.dto.toprated.TopRatedDTO
 import com.example.entertainment.core.domain.Mapper
 import com.example.toprated.domain.TopRatedDomainModel
 import com.example.toprated.domain.TopRatedMovie

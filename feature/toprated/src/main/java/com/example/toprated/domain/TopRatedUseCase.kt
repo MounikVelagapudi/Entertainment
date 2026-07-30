@@ -1,5 +1,6 @@
 package com.example.toprated.domain
 
+import com.example.entertainment.core.domain.Result
 import com.example.entertainment.core.domain.TRPError
 import javax.inject.Inject
 

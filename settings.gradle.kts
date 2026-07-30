@@ -24,4 +24,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "Entertainment"
 include(":app")
- 
+include(":feature:toprated")
+include(":feature:popular")
+include(":core")

@@ -6,9 +6,9 @@ import com.example.entertainment.MediaUiEvents
 import com.example.entertainment.core.domain.Result
 import com.example.entertainment.di.IoDispatcher
 import com.example.entertainment.home.omdb.OmDbUiState
-import com.example.entertainment.home.popularMovies.domain.GetPopularMovieUseCase
-import com.example.entertainment.home.popularMovies.domain.PopularMovie
-import com.example.entertainment.home.topRated.topRated.domain.TopRatedUseCase
+import com.example.popular.domain.GetPopularMovieUseCase
+import com.example.popular.domain.PopularMovie
+import com.example.toprated.domain.TopRatedUseCase
 import com.example.entertainment.home.trendingMovies.domain.TrendingUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
@@ -20,7 +20,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.supervisorScope
 import javax.inject.Inject
 
 
@@ -87,6 +86,7 @@ class HomeViewModel @Inject constructor(
         when (val result = topRatedUseCase.invoke()) {
             is Result.Success -> {
                 val uiModel = result.data.toMediaUiModel()
+                mediaResultsCache.putAll(uiModel.results)
                 _topRatedMoviesUiState.value = MediaSectionUiState.Success(uiModel)
             }
 
@@ -107,7 +107,7 @@ class HomeViewModel @Inject constructor(
         when (val result = popularMovieUseCase.invoke()) {
             is Result.Success -> {
                 val uiModel = result.data.toMediaUiModel()
-                mediaResultsCache.putAll(uiModel.results)
+                mediaResultsCache.putAll(uiModel.results)  // Caching the media results into a map
                 _popularUiState.value = MediaSectionUiState.Success(uiModel)
             }
 
@@ -127,6 +127,7 @@ class HomeViewModel @Inject constructor(
         when (val result = trendingUseCase.invoke()) {
             is Result.Success -> {
                 val uiModel = result.data.toMediaUiModel()
+                mediaResultsCache.putAll(uiModel.results)
                 _trendingMoviesUiState.value = MediaSectionUiState.Success(uiModel)
             }
 

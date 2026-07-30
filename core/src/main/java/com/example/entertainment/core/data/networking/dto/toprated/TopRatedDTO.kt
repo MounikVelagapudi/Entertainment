@@ -1,4 +1,4 @@
-package com.example.toprated.data
+package com.example.entertainment.core.data.networking.dto.toprated
 
 
 import kotlinx.serialization.SerialName

@@ -1,8 +1,10 @@
-package com.example.entertainment.home.popularMovies.data
+package com.example.popular.data
 
 import com.example.entertainment.core.domain.Mapper
-import com.example.entertainment.home.popularMovies.domain.PopularMovie
-import com.example.entertainment.home.popularMovies.domain.PopularMoviesDomainModel
+import com.example.entertainment.home.popularMovies.data.PopularMovieDTO
+import com.example.entertainment.home.popularMovies.data.ResultDTO
+import com.example.popular.domain.PopularMovie
+import com.example.popular.domain.PopularMoviesDomainModel
 import javax.inject.Inject
 
 class PopularMovieDataMapper @Inject constructor() :

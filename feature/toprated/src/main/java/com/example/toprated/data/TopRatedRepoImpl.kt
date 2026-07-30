@@ -1,6 +1,7 @@
 package com.example.toprated.data
 
 import com.example.entertainment.core.data.networking.mappedApiCall
+import com.example.entertainment.core.domain.Result
 import com.example.entertainment.core.domain.TRPError
 import com.example.entertainment.home.HomeScreenApi
 import com.example.toprated.domain.TopRatedDomainModel
