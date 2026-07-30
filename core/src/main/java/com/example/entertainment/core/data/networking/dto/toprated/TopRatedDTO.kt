@@ -1,4 +1,4 @@
-package com.example.entertainment.home.topRated.topRated.data
+package com.example.toprated.data
 
 
 import kotlinx.serialization.SerialName

@@ -1,11 +1,10 @@
-package com.example.entertainment.home.topRated.topRated.data
+package com.example.toprated.data
 
 import com.example.entertainment.core.data.networking.mappedApiCall
-import com.example.entertainment.core.domain.Result
 import com.example.entertainment.core.domain.TRPError
 import com.example.entertainment.home.HomeScreenApi
-import com.example.entertainment.home.topRated.topRated.domain.TopRatedDomainModel
-import com.example.entertainment.home.topRated.topRated.domain.TopRatedRepo
+import com.example.toprated.domain.TopRatedDomainModel
+import com.example.toprated.domain.TopRatedRepo
 import javax.inject.Inject
 
 class TopRatedRepoImpl @Inject constructor(

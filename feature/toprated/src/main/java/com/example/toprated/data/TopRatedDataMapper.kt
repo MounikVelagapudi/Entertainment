@@ -1,8 +1,8 @@
-package com.example.entertainment.home.topRated.topRated.data
+package com.example.toprated.data
 
 import com.example.entertainment.core.domain.Mapper
-import com.example.entertainment.home.topRated.topRated.domain.TopRatedDomainModel
-import com.example.entertainment.home.topRated.topRated.domain.TopRatedMovie
+import com.example.toprated.domain.TopRatedDomainModel
+import com.example.toprated.domain.TopRatedMovie
 import javax.inject.Inject
 
 class TopRatedDataMapper @Inject constructor() : Mapper<TopRatedDTO, TopRatedDomainModel> {
