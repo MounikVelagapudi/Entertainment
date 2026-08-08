@@ -1,5 +1,7 @@
 package com.example.entertainment.home
 
+import com.example.presentation.presentation.MediaResults
+import com.example.presentation.presentation.MediaResultsCache
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test

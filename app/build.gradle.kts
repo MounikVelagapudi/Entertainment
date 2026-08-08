@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.google.services)
 }
 
 val keysProperties = Properties().apply {
@@ -60,11 +61,38 @@ android {
     }
 }
 
+// Compose Compiler Metrics & Reports.
+// Kotlin 2.x folds the Compose compiler into the Kotlin plugin itself (the
+// `kotlin.plugin.compose` plugin we apply above), so metrics are configured
+// through this `composeCompiler {}` extension rather than the old
+// `freeCompilerArgs += "-P plugin:androidx.compose.compiler..."` hack you'll
+// still see in older tutorials/StackOverflow answers.
+//
+// Run a build (e.g. `./gradlew :app:assembleDebug`) and inspect:
+//   app/build/compose_reports/*-composables.csv  -> every @Composable, and whether it's
+//                                                     "restartable"/"skippable" or not
+//   app/build/compose_reports/*-composables.txt  -> same info, human readable
+//   app/build/compose_metrics/*-classes.txt      -> stability verdict for YOUR classes
+//                                                     (e.g. MediaUIModel, MediaResults)
+//
+// What to look for: a class you assumed was stable showing up as "unstable" in
+// classes.txt, or a composable showing "skippable: false". Both mean Compose
+// can't skip recomposition for it even when its inputs haven't changed.
+composeCompiler {
+    metricsDestination = layout.buildDirectory.dir("compose_metrics")
+    reportsDestination = layout.buildDirectory.dir("compose_reports")
+}
+
 dependencies {
     implementation(project(":core"))
-    implementation(project(":feature:popular"))
-    implementation(project(":feature:toprated"))
-
+    implementation(project(":feature:tabs:tmdb:popular"))
+    implementation(project(":feature:tabs:tmdb:toprated"))
+    implementation(project(":feature:tabs:tmdb:trending"))
+    implementation(project(":feature:tabs:tmdb:presentation"))
+    implementation(project(":feature:tabs:more"))
+    implementation(project(":feature:tabs:profile"))
+    implementation(project(":feature:tabs:favourite"))
+    implementation(project(":feature:tabs:search"))
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
@@ -77,6 +105,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.ui)
+    implementation(libs.firebase.common.ktx)
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
@@ -91,6 +120,18 @@ dependencies {
     implementation(libs.coil.network.okhttp)
 
     implementation(libs.kotlinx.serialization.json)
+
+    // Jetpack JankStats: measures real dropped frames against the device's
+    // ACTUAL refresh rate (60Hz/90Hz/120Hz), unlike our hand-rolled 16ms
+    // heuristic in ComposePerformanceMonitoring.kt.
+    implementation(libs.androidx.metrics.performance)
+
+    // Firebase Performance Monitoring -- destination for jank/frame metrics
+    // once we forward them here instead of just Log.w. The BoM pins every
+    // Firebase artifact's version together so we don't have to track them
+    // individually.
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.perf)
 
     testImplementation(libs.junit)
     testImplementation(libs.mockk)

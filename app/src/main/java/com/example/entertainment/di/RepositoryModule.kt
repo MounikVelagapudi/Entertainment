@@ -2,8 +2,8 @@ package com.example.entertainment.di
 
 import com.example.popular.data.PopularMoviesRepoImpl
 import com.example.popular.domain.PopularMoviesRepo
-import com.example.entertainment.home.trendingMovies.data.TrendingRepoImpl
-import com.example.entertainment.home.trendingMovies.domain.TrendingRepo
+import com.example.trending.data.TrendingRepoImpl
+import com.example.trending.domain.TrendingRepo
 import com.example.toprated.data.TopRatedRepoImpl
 import com.example.toprated.domain.TopRatedRepo
 import dagger.Binds

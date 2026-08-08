@@ -55,6 +55,7 @@ dependencies {
     api(libs.retrofit.core)
     api(libs.kotlinx.serialization.json)
     api(libs.kotlinx.coroutines.core)
+    api(libs.hilt.android)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

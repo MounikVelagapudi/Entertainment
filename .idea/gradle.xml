@@ -12,8 +12,16 @@
             <option value="$PROJECT_DIR$/app" />
             <option value="$PROJECT_DIR$/core" />
             <option value="$PROJECT_DIR$/feature" />
-            <option value="$PROJECT_DIR$/feature/popular" />
-            <option value="$PROJECT_DIR$/feature/toprated" />
+            <option value="$PROJECT_DIR$/feature/tabs" />
+            <option value="$PROJECT_DIR$/feature/tabs/favourite" />
+            <option value="$PROJECT_DIR$/feature/tabs/more" />
+            <option value="$PROJECT_DIR$/feature/tabs/profile" />
+            <option value="$PROJECT_DIR$/feature/tabs/search" />
+            <option value="$PROJECT_DIR$/feature/tabs/tmdb" />
+            <option value="$PROJECT_DIR$/feature/tabs/tmdb/popular" />
+            <option value="$PROJECT_DIR$/feature/tabs/tmdb/presentation" />
+            <option value="$PROJECT_DIR$/feature/tabs/tmdb/toprated" />
+            <option value="$PROJECT_DIR$/feature/tabs/tmdb/trending" />
           </set>
         </option>
       </GradleProjectSettings>
