@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1065640112833",
+    "project_id": "entertainment-cc24f",
+    "storage_bucket": "entertainment-cc24f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1065640112833:android:245ea05f3df801b0511a40",
+        "android_client_info": {
+          "package_name": "com.example.entertainment"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC5VOu1YouJW8v8SY6u2OnoBnbhSoX0O2Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

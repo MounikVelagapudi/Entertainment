@@ -3,6 +3,7 @@ package com.example.entertainment.home.omdb
 import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Query
+import com.example.entertainment.home.omdb.OmDbDTO
 
 
 interface OmdbApiService {

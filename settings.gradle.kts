@@ -1,3 +1,17 @@
+import org.gradle.kotlin.dsl.project
+
+include(":feature:tabs:profile")
+
+
+include(":feature:tabs:more")
+
+
+include(":feature:tabs:favourite")
+
+
+include(":feature:tabs:search")
+
+
 pluginManagement {
     repositories {
         google {
@@ -24,4 +38,12 @@ dependencyResolutionManagement {
 
 rootProject.name = "Entertainment"
 include(":app")
- 
+include(":feature:tabs:tmdb:toprated")
+include(":feature:tabs:tmdb:popular")
+include(":core")
+include(":feature:tabs:tmdb:trending")
+include(":feature:tabs:tmdb:presentation")
+include(":feature:tabs:more")
+include(":feature:tabs:profile")
+include(":feature:tabs:favourite")
+include(":feature:tabs:search")

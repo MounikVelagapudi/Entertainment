@@ -3,6 +3,10 @@ package com.example.entertainment.home.trendingMovies.domain
 import com.example.entertainment.core.domain.NetworkError
 import com.example.entertainment.core.domain.NetworkFailure
 import com.example.entertainment.core.domain.Result
+import com.example.trending.domain.TrendingMovie
+import com.example.trending.domain.TrendingMoviesDomainModel
+import com.example.trending.domain.TrendingRepo
+import com.example.trending.domain.TrendingUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk

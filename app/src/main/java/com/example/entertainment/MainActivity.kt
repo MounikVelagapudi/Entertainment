@@ -27,12 +27,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.presentation.presentation.HomeScreenContent
+import com.example.presentation.presentation.MediaResults
+import com.example.entertainment.detailsScreen.MediaDetailScreen
 import com.example.entertainment.favourite.FavouriteScreen
-import com.example.entertainment.home.HomeScreenContent
-import com.example.entertainment.home.MediaResults
 import com.example.entertainment.more.MoreScreen
 import com.example.entertainment.profile.ProfileScreen
-import com.example.entertainment.detailsScreen.MediaDetailScreen
+import com.example.presentation.presentation.performance.TrackJank
 import com.example.entertainment.ui.theme.EntertainmentTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -71,6 +72,10 @@ private const val ROUTE_SCREEN2 = "$ROUTE_SCREEN2_BASE/{$ARG_MEDIA_ID}"
 @Composable
 fun EntertainmentApp() {
     val navController = rememberNavController()
+
+    // Attached once at the app root -- covers every screen reachable through
+    // navController, not just Home.
+    TrackJank()
 
     NavHost(navController = navController, startDestination = ROUTE_MAIN) {
         composable(ROUTE_MAIN) {

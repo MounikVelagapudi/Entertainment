@@ -1,8 +1,8 @@
 package com.example.entertainment.detailsScreen
 
 import androidx.lifecycle.ViewModel
-import com.example.entertainment.home.MediaResults
-import com.example.entertainment.home.MediaResultsCache
+import com.example.presentation.presentation.MediaResults
+import com.example.presentation.presentation.MediaResultsCache
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
