@@ -32,6 +32,13 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+    testOptions {
+        unitTests {
+            // TopRatedRepoImplTest exercises mappedApiCall(), which logs through
+            // android.util.Log -- unmocked on the JVM test classpath by default.
+            isReturnDefaultValues = true
+        }
+    }
 }
 
 dependencies {

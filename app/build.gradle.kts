@@ -92,7 +92,6 @@ dependencies {
     implementation(project(":feature:tabs:more"))
     implementation(project(":feature:tabs:profile"))
     implementation(project(":feature:tabs:favourite"))
-    implementation(project(":feature:tabs:search"))
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
@@ -111,6 +110,8 @@ dependencies {
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.hilt.work)
 
     implementation(libs.retrofit.core)
     implementation(libs.retrofit.converter.kotlinx.serialization)
@@ -132,6 +133,17 @@ dependencies {
     // individually.
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.perf)
+    implementation(libs.firebase.messaging)
+
+    // Composition tracing -- adds composable names/args to system traces
+    // captured via Android Studio's Profiler. Debug-only: it's a no-op
+    // shim in release builds.
+    debugImplementation(libs.androidx.compose.runtime.tracing)
+    // minSdk is 24, below the API 30 floor where the platform can record
+    // these traces itself, so we ship the userspace Perfetto SDK to do it
+    // on older devices too.
+    implementation(libs.androidx.tracing.perfetto)
+    implementation(libs.androidx.tracing.perfetto.binary)
 
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
@@ -143,4 +155,9 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
+
+    /* debugImplementation only -- LeakCanary installs itself via a ContentProvider and
+       must never ship in a release build (it holds heap dumps and its own UI on top of
+       the app). It self-registers, so no code changes are needed beyond this line. */
+    debugImplementation(libs.leakcanary.android)
 }

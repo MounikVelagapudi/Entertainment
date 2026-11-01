@@ -19,7 +19,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
-import com.example.entertainment.home.omdb.OmDbDTO
+import com.example.entertainment.core.home.omdb.OmDbDTO
 
 
 @Composable

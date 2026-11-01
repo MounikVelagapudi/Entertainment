@@ -32,6 +32,7 @@ class TrendingUseCaseTest {
                 mediaType = "movie",
                 originalLanguage = "en",
                 originalTitle = "Inception",
+                overview = "A thief who steals secrets.",
                 popularity = 123.4,
                 posterPath = "/poster.jpg",
                 releaseDate = "2010-07-16",
@@ -47,66 +48,51 @@ class TrendingUseCaseTest {
 
     @Test
     fun `invoke returns Result Success with repo data when repo succeeds`() = runTest {
-        // Arrange
         val domainModel = trendingMoviesDomainModel()
-        coEvery { trendingRepo.getTrendingMovies() } returns Result.Success(domainModel)
+        coEvery { trendingRepo.refreshTrendingMovie() } returns Result.Success(domainModel)
 
-        // Act
-        val result = trendingUseCase.invoke()
+        val result = trendingUseCase.refresh()
 
-        // Assert
         assertTrue(result is Result.Success)
         assertEquals(domainModel, (result as Result.Success).data)
     }
 
     @Test
     fun `invoke returns Result Error when repo returns error`() = runTest {
-        // Arrange
-        coEvery { trendingRepo.getTrendingMovies() } returns Result.Error(NetworkError.NoInternetError)
+        coEvery { trendingRepo.refreshTrendingMovie() } returns Result.Error(NetworkError.NoInternetError)
 
-        // Act
-        val result = trendingUseCase.invoke()
+        val result = trendingUseCase.refresh()
 
-        // Assert
         assertTrue(result is Result.Error)
         assertEquals(NetworkError.NoInternetError, (result as Result.Error).error)
     }
 
     @Test
     fun `invoke returns Result Failure when repo returns failure`() = runTest {
-        // Arrange
-        coEvery { trendingRepo.getTrendingMovies() } returns Result.Failure(NetworkFailure.IOFailure)
+        coEvery { trendingRepo.refreshTrendingMovie() } returns Result.Failure(NetworkFailure.IOFailure)
 
-        // Act
-        val result = trendingUseCase.invoke()
+        val result = trendingUseCase.refresh()
 
-        // Assert
         assertTrue(result is Result.Failure)
         assertEquals(NetworkFailure.IOFailure, (result as Result.Failure).failure)
     }
 
     @Test
     fun `invoke calls repo getTrendingMovies exactly once`() = runTest {
-        // Arrange
-        coEvery { trendingRepo.getTrendingMovies() } returns Result.Success(trendingMoviesDomainModel())
+        coEvery { trendingRepo.refreshTrendingMovie() } returns Result.Success(trendingMoviesDomainModel())
 
-        // Act
-        trendingUseCase.invoke()
+        trendingUseCase.refresh()
 
-        // Assert
-        coVerify(exactly = 1) { trendingRepo.getTrendingMovies() }
+        coVerify(exactly = 1) { trendingRepo.refreshTrendingMovie() }
     }
 
     @Test
     fun `invoke returns the exact same success instance from repo without modification`() = runTest {
-        // Arrange
         val domainModel = trendingMoviesDomainModel()
-        coEvery { trendingRepo.getTrendingMovies() } returns Result.Success(domainModel)
+        coEvery { trendingRepo.refreshTrendingMovie() } returns Result.Success(domainModel)
 
-        // Act
-        val result = trendingUseCase.invoke() as Result.Success
+        val result = trendingUseCase.refresh() as Result.Success
 
-        // Assert
         assertSame(domainModel, result.data)
     }
 }

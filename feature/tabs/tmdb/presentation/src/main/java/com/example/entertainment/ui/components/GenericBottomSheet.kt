@@ -6,8 +6,8 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import com.example.presentation.presentation.MediaDetailBottomSheetContent
-import com.example.entertainment.ui.preview.PreviewConstants
+import com.example.entertainment.core.presentation.reusable_components.ui.MediaDetailBottomSheetContent
+import com.example.entertainment.core.presentation.reusable_components.preview.PreviewConstants
 
 /**
  * Shows [content] for [item] in a modal bottom sheet whenever [item] is non-null,

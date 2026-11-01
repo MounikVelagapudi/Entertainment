@@ -52,7 +52,6 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.ui)
-    implementation(libs.firebase.common.ktx)
 
     implementation(libs.hilt.android)
     implementation(libs.androidx.hilt.navigation.compose)
@@ -71,13 +70,6 @@ dependencies {
     // ACTUAL refresh rate (60Hz/90Hz/120Hz), unlike our hand-rolled 16ms
     // heuristic in ComposePerformanceMonitoring.kt.
     implementation(libs.androidx.metrics.performance)
-
-    // Firebase Performance Monitoring -- destination for jank/frame metrics
-    // once we forward them here instead of just Log.w. The BoM pins every
-    // Firebase artifact's version together so we don't have to track them
-    // individually.
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.perf)
 
     testImplementation(libs.junit)
     testImplementation(libs.mockk)

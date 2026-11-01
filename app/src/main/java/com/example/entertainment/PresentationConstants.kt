@@ -1,6 +1,6 @@
 package com.example.entertainment
 
-import com.example.entertainment.home.trendingMovies.data.ResultDTO
+import com.example.entertainment.core.home.trendingMovies.data.ResultDTO
 import com.example.trending.domain.TrendingMoviesDomainModel
 import com.example.trending.domain.TrendingMovie
 
@@ -59,28 +59,4 @@ val previewResultDTOs = listOf(
         vote_average = 8.2,
         vote_count = 2010
     )
-)
-
-val previewTmDbDTO = TrendingMoviesDomainModel(
-    page = 1,
-    results = previewResultDTOs.map {
-        TrendingMovie(
-            adult = it.adult,
-            backdropPath = it.backdrop_path,
-            genreIds = it.genre_ids,
-            id = it.id,
-            mediaType = it.media_type,
-            originalLanguage = it.original_language,
-            originalTitle = it.original_title,
-            popularity = it.popularity,
-            posterPath = it.poster_path,
-            releaseDate = it.release_date,
-            title = it.title,
-            video = it.video,
-            voteAverage = it.vote_average,
-            voteCount = it.vote_count
-        )
-    },
-    totalPages = 1,
-    totalResults = previewResultDTOs.size
 )

@@ -9,7 +9,6 @@ include(":feature:tabs:more")
 include(":feature:tabs:favourite")
 
 
-include(":feature:tabs:search")
 
 
 pluginManagement {
@@ -46,4 +45,3 @@ include(":feature:tabs:tmdb:presentation")
 include(":feature:tabs:more")
 include(":feature:tabs:profile")
 include(":feature:tabs:favourite")
-include(":feature:tabs:search")

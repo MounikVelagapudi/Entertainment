@@ -1,9 +1,9 @@
 package com.example.entertainment.home
 
 import com.example.entertainment.MainDispatcherRule
-import com.example.entertainment.MediaUiEvents
+import com.example.entertainment.core.presentation.reusable_components.events.MediaUiEvents
 import com.example.entertainment.core.domain.NetworkError
-import com.example.entertainment.core.domain.NetworkFailure
+import com.example.entertainment.core.domain.Resource
 import com.example.entertainment.core.domain.Result
 import com.example.entertainment.home.omdb.OmDbUiState
 import com.example.popular.domain.GetPopularMovieUseCase
@@ -15,16 +15,17 @@ import com.example.toprated.domain.TopRatedUseCase
 import com.example.trending.domain.TrendingMovie
 import com.example.trending.domain.TrendingMoviesDomainModel
 import com.example.trending.domain.TrendingUseCase
+import androidx.lifecycle.SavedStateHandle
+import androidx.work.WorkManager
 import app.cash.turbine.test
 import com.example.presentation.presentation.HomeViewModel
-import com.example.presentation.presentation.MediaResults
-import com.example.presentation.presentation.MediaResultsCache
+import com.example.entertainment.core.presentation.reusable_components.MediaResults
 import com.example.presentation.presentation.MediaSectionUiState
 import com.example.presentation.presentation.toMediaUiModel
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verify
-import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -33,26 +34,40 @@ import org.junit.Test
 
 class HomeViewModelTest {
 
-    // Swaps Dispatchers.Main for a TestDispatcher for the duration of each test.
-    // Needed because HomeViewModel uses viewModelScope (= Dispatchers.Main) internally,
-    // e.g. in the onEvent(OnTapOfRating) branch below.
+    /* TestDispatcher swap for viewModelScope (needs Dispatchers.Main), which the JVM test runner doesn't have. */
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    // The use cases and cache are mocked because these tests only care about
-    // HomeViewModel's own logic (state updates, event handling), not what the
-    // use cases do internally -- that's already covered by their own test classes.
+    /* Mocked -- these tests only care about HomeViewModel's own logic, not the use cases' internals. */
     private val trendingUseCase = mockk<TrendingUseCase>()
     private val popularMovieUseCase = mockk<GetPopularMovieUseCase>()
     private val topRatedUseCase = mockk<TopRatedUseCase>()
-    private val mediaResultsCache = mockk<MediaResultsCache>()
+
+    /* Relaxed -- these tests don't care about the periodic sync schedule, just that
+       init{} calling into it doesn't blow up with no stub configured. */
+    private val workManager = mockk<WorkManager>(relaxed = true)
+
+    init {
+        /* observe() is collected eagerly at construction, so every test needs a default even if it
+           doesn't care about TopRated -- tests that do care override this before calling viewModel(). */
+        every { topRatedUseCase.observe() } returns MutableStateFlow(Resource.Loading)
+        coEvery { topRatedUseCase.refresh(any()) } returns Result.Success(topRatedDomainModel())
+
+        /* Same idea for Popular. */
+        every { popularMovieUseCase.observe() } returns MutableStateFlow(Resource.Loading)
+        coEvery { popularMovieUseCase.refresh(any()) } returns Result.Success(popularDomainModel())
+
+        /* Same idea for Trending. */
+        every { trendingUseCase.observe() } returns MutableStateFlow(Resource.Loading)
+        coEvery { trendingUseCase.refresh() } returns Result.Success(trendingDomainModel())
+    }
 
     private fun viewModel() = HomeViewModel(
         trendingUseCase = trendingUseCase,
         popularMovieUseCase = popularMovieUseCase,
         topRatedUseCase = topRatedUseCase,
-        mediaResultsCache = mediaResultsCache,
-        ioDispatcher = StandardTestDispatcher()
+        workManager = workManager,
+        savedStateHandle = SavedStateHandle(),
     )
 
     private fun mediaResults(id: Int = 1) = MediaResults(
@@ -63,8 +78,7 @@ class HomeViewModelTest {
         ratings = 8.8
     )
 
-    // One domain model per section, each with a distinct id so a bug that mixed up
-    // which section's data ended up where would actually be visible in an assertion.
+    /* Distinct id per section, so a bug that mixes up which section's data landed where would actually show. */
     private fun trendingDomainModel(id: Int = 1) = TrendingMoviesDomainModel(
         page = 1,
         results = listOf(
@@ -76,6 +90,7 @@ class HomeViewModelTest {
                 mediaType = "movie",
                 originalLanguage = "en",
                 originalTitle = "Trending Movie",
+                overview = "A trending movie.",
                 popularity = 10.0,
                 posterPath = "/trending_poster.jpg",
                 releaseDate = "2020-01-01",
@@ -138,91 +153,63 @@ class HomeViewModelTest {
 
     @Test
     fun `onEvent OnTapOfDisclosure sets disclosures to the tapped media`() {
-        // Arrange
         val viewModel = viewModel()
         val media = mediaResults()
 
-        // Act
         viewModel.onEvent(MediaUiEvents.OnTapOfDisclosure(media))
 
-        // Assert
         assertEquals(media, viewModel.disclosures.value)
     }
 
     @Test
     fun `onEvent OnTapOfMovieCard does not change disclosures`() {
-        // Arrange
         val viewModel = viewModel()
 
-        // Act
-        // OnTapOfMovieCard is intentionally a no-op in the ViewModel -- navigation is
-        // handled by the caller -- so disclosures should stay at its initial value (null).
+        /* OnTapOfMovieCard is a no-op here -- navigation is handled by the caller. */
         viewModel.onEvent(MediaUiEvents.OnTapOfMovieCard(mediaResults()))
 
-        // Assert
         assertNull(viewModel.disclosures.value)
     }
 
     @Test
     fun `onEvent OnTapOfRating emits a toast message with the tapped id`() = runTest {
-        // Arrange
         val viewModel = viewModel()
 
-        // toastMessage.test { ... } subscribes to the SharedFlow *before* running the
-        // block inside, which is exactly the ordering this test needs: the flow has no
-        // replay, so a collector that started late would miss the emission entirely.
+        /* toastMessage has no replay, so the collector must subscribe before the event fires. */
         viewModel.toastMessage.test {
-            // Act
             viewModel.onEvent(MediaUiEvents.OnTapOfRating(id = 4.5))
 
-            // Assert
-            // awaitItem() suspends until the next emission (or fails the test if none
-            // arrives) -- no manual advanceUntilIdle()/list bookkeeping needed.
             assertEquals("Ratings tapped -- 4.5", awaitItem())
-
-            // The test { } block cancels its collector automatically when it ends, so
-            // there's no job to clean up by hand (unlike the manual launch/collect version).
         }
     }
 
     @Test
     fun `dismissInfoSheet clears a previously set disclosure back to null`() {
-        // Arrange
         val viewModel = viewModel()
         viewModel.onEvent(MediaUiEvents.OnTapOfDisclosure(mediaResults()))
         assertEquals(mediaResults(), viewModel.disclosures.value)
 
-        // Act
         viewModel.dismissInfoSheet()
 
-        // Assert
         assertNull(viewModel.disclosures.value)
     }
 
     @Test
     fun `dismissInfoSheet on an already-null disclosure is a no-op`() {
-        // Arrange
         val viewModel = viewModel()
 
-        // Act
         viewModel.dismissInfoSheet()
 
-        // Assert
         assertNull(viewModel.disclosures.value)
     }
 
     @Test
     fun `uiState starts as Loading for every section before loadAll is called`() {
-        // Arrange
         val viewModel = viewModel()
 
-        // Act
-        // stateIn's initialValue is available synchronously the moment the ViewModel is
-        // built, even with zero collectors -- unlike the emissions loadAll() triggers
-        // below, reading .value here doesn't need us to subscribe to uiState first.
+        /* stateIn's initialValue is available synchronously, even with zero collectors. */
         val initialState = viewModel.uiState.value
 
-        // Assert
         assertEquals(OmDbUiState.Loading, initialState.omdbUiState)
         assertEquals(MediaSectionUiState.Loading, initialState.tmdbUiState)
         assertEquals(MediaSectionUiState.Loading, initialState.popularMovieUiState)
@@ -232,48 +219,35 @@ class HomeViewModelTest {
     @Test
     fun `loadAll updates uiState to Success for every section when all use cases succeed`() =
         runTest {
-            // Arrange
             val trendingModel = trendingDomainModel()
             val popularModel = popularDomainModel()
             val topRatedModel = topRatedDomainModel()
-            coEvery { trendingUseCase.invoke() } returns Result.Success(trendingModel)
-            coEvery { popularMovieUseCase.invoke() } returns Result.Success(popularModel)
-            coEvery { topRatedUseCase.invoke() } returns Result.Success(topRatedModel)
+            coEvery { trendingUseCase.refresh() } returns Result.Success(trendingModel)
+            every { trendingUseCase.observe() } returns MutableStateFlow(Resource.Success(trendingModel))
+            every { popularMovieUseCase.observe() } returns MutableStateFlow(
+                Resource.Success(popularModel)
+            )
+            every { topRatedUseCase.observe() } returns MutableStateFlow(
+                Resource.Success(
+                    topRatedModel
+                )
+            )
             val viewModel = viewModel()
 
             viewModel.uiState.test {
-                // uiState is built with .stateIn(scope = viewModelScope, started =
-                // WhileSubscribed(5000), ...), so the combine() of the four section flows
-                // only starts actively collecting once something subscribes to uiState.
-                // This `test { }` block IS that subscriber. If loadAll() were called before
-                // subscribing, the section flows could update before combine was listening,
-                // and this test could see stale data instead of failing loudly.
-                awaitItem() // the initial Loading/Loading/Loading/Loading state
+                /* Subscribing here is what starts combine() collecting the section flows. */
+                awaitItem()
 
-                // Act
                 viewModel.loadAll()
-                // loadAll() fires three separate viewModelScope.launch { } coroutines.
-                // Nothing here actually suspends on real I/O (the use cases are mocked),
-                // so advanceUntilIdle() just needs to run all three to completion.
                 testScheduler.advanceUntilIdle()
 
-                // combine() re-emits once per upstream change, so three sections flipping
-                // Loading -> Success independently (in whatever order the dispatcher
-                // happened to run them) can produce several intermediate combined states.
-                // expectMostRecentItem() discards all of those and returns only the final,
-                // settled state -- which is the only one these assertions care about.
+                /* Sections can flip Loading -> Success independently and combine() re-emits each
+                   time, so grab only the final settled state. */
                 val finalState = expectMostRecentItem()
 
-                // Assert
-                // omdbUiState is never written to by loadAll() (nothing in HomeViewModel
-                // currently populates it), so it should still be at its initial value.
+                /* loadAll() never writes omdbUiState, so it stays at its initial value. */
                 assertEquals(OmDbUiState.Loading, finalState.omdbUiState)
 
-                // Reusing the production toMediaUiModel() mapper to build the expected
-                // value keeps this test focused on ViewModel behavior (does it react to
-                // Result.Success correctly?) rather than re-deriving mapping logic here.
-                // Trade-off: a bug inside toMediaUiModel() itself wouldn't be caught by
-                // this test -- that mapper deserves its own dedicated unit test.
                 assertEquals(
                     MediaSectionUiState.Success(trendingModel.toMediaUiModel()),
                     finalState.tmdbUiState
@@ -291,66 +265,30 @@ class HomeViewModelTest {
             }
         }
 
-    @Test
-    fun `loadAll caches the popular movies results only when that use case succeeds`() =
-        runTest {
-            // Arrange
-            val popularModel = popularDomainModel()
-            coEvery { trendingUseCase.invoke() } returns Result.Success(trendingDomainModel())
-            coEvery { popularMovieUseCase.invoke() } returns Result.Success(popularModel)
-            coEvery { topRatedUseCase.invoke() } returns Result.Success(topRatedDomainModel())
-            val viewModel = viewModel()
-
-            viewModel.uiState.test {
-                // Act
-                awaitItem() // initial Loading state
-                viewModel.loadAll()
-                testScheduler.advanceUntilIdle()
-                expectMostRecentItem() // wait for the final settled state before asserting
-                cancelAndIgnoreRemainingEvents()
-            }
-
-            // Assert
-            // fetchPopularData() pushes results into the shared MediaResultsCache only on
-            // success, so the movie-details screen can look up a tapped movie by id without
-            // a second network call. This is a side effect of the popular-movies branch
-            // specifically, so it's asserted separately from the uiState shape above.
-            verify(exactly = 1) { mediaResultsCache.putAll(popularModel.toMediaUiModel().results) }
-        }
 
     @Test
-    fun `loadAll surfaces Result Error and Result Failure as Error states using their toString message`() =
+    fun `topRated stays on the cached Success state when a refresh fails (offline-first)`() =
         runTest {
-            // Arrange
-            // Deliberately mixing Result.Error and Result.Failure across sections: HomeViewModel
-            // maps both to the same MediaSectionUiState.Error, using error/failure.toString() as
-            // the message -- Kotlin `object` declarations default toString() to their simple
-            // class name, which is what we assert against below (e.g. "NoInternetError").
-            coEvery { trendingUseCase.invoke() } returns Result.Error(NetworkError.NoInternetError)
-            coEvery { popularMovieUseCase.invoke() } returns Result.Failure(NetworkFailure.IOFailure)
+            /* Cache already has data from a previous refresh -- that stays visible even though this one fails. */
             val topRatedModel = topRatedDomainModel()
-            coEvery { topRatedUseCase.invoke() } returns Result.Success(topRatedModel)
+            every { topRatedUseCase.observe() } returns MutableStateFlow(
+                Resource.Success(
+                    topRatedModel
+                )
+            )
+            coEvery { topRatedUseCase.refresh(any()) } returns Result.Error(NetworkError.NoInternetError)
+            coEvery { trendingUseCase.refresh() } returns Result.Success(trendingDomainModel())
+            every { popularMovieUseCase.observe() } returns MutableStateFlow(
+                Resource.Success(popularDomainModel())
+            )
             val viewModel = viewModel()
 
             viewModel.uiState.test {
-                // Act
-                awaitItem() // initial Loading state
+                awaitItem()
                 viewModel.loadAll()
                 testScheduler.advanceUntilIdle()
                 val finalState = expectMostRecentItem()
 
-                // Assert
-                assertEquals(
-                    MediaSectionUiState.Error("NoInternetError"),
-                    finalState.tmdbUiState
-                )
-                assertEquals(
-                    MediaSectionUiState.Error("IOFailure"),
-                    finalState.popularMovieUiState
-                )
-                // The topRated section still succeeds independently -- one section failing
-                // must not drag the others down, since they're separate viewModelScope.launch
-                // coroutines rather than one all-or-nothing block.
                 assertEquals(
                     MediaSectionUiState.Success(topRatedModel.toMediaUiModel()),
                     finalState.topRatedMoviesUiState
@@ -358,9 +296,30 @@ class HomeViewModelTest {
 
                 cancelAndIgnoreRemainingEvents()
             }
+        }
 
-            // Assert (continued)
-            // A failed popular-movies fetch has nothing worth caching.
-            verify(exactly = 0) { mediaResultsCache.putAll(any()) }
+    @Test
+    fun `topRated maps a Resource Error from the use case straight through`() =
+        runTest {
+            every { topRatedUseCase.observe() } returns MutableStateFlow(Resource.Error("NoInternetError"))
+            coEvery { trendingUseCase.refresh() } returns Result.Success(trendingDomainModel())
+            every { popularMovieUseCase.observe() } returns MutableStateFlow(
+                Resource.Success(popularDomainModel())
+            )
+            val viewModel = viewModel()
+
+            viewModel.uiState.test {
+                awaitItem()
+                viewModel.loadAll()
+                testScheduler.advanceUntilIdle()
+                val finalState = expectMostRecentItem()
+
+                assertEquals(
+                    MediaSectionUiState.Error("NoInternetError"),
+                    finalState.topRatedMoviesUiState
+                )
+
+                cancelAndIgnoreRemainingEvents()
+            }
         }
 }

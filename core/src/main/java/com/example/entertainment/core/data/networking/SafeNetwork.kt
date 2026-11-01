@@ -14,6 +14,7 @@ import com.example.entertainment.core.domain.map
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
@@ -80,6 +81,12 @@ fun <T> mapExceptionToResult(throwable: Throwable): Result<T, RootNetworkError> 
     }
 }
 
+const val TRANSIENT_RETRY_ATTEMPTS = 2
+const val TRANSIENT_RETRY_DELAY_MS = 400L
+
+fun Throwable.isTransientNetworkFailure(): Boolean =
+    this is UnknownHostException || this is ConnectException || this is SocketTimeoutException
+
 /**
  * Safe call to the network
  *
@@ -94,7 +101,17 @@ suspend inline fun <reified T> safeCall(
 ): Result<T, RootNetworkError> {
     val response = try {
         withContext(networkDispatcher) {
-            execute.invoke()
+            var lastFailure: Exception? = null
+            for (attempt in 0..TRANSIENT_RETRY_ATTEMPTS) {
+                try {
+                    return@withContext execute.invoke()
+                } catch (e: Exception) {
+                    if (!e.isTransientNetworkFailure()) throw e
+                    lastFailure = e
+                    if (attempt < TRANSIENT_RETRY_ATTEMPTS) delay(TRANSIENT_RETRY_DELAY_MS)
+                }
+            }
+            throw lastFailure!!
         }
     } catch (exception: Exception) {
         Log.d("SafeNetwork", "Exception", exception)
@@ -106,6 +123,7 @@ suspend inline fun <reified T> safeCall(
     }
     return responseToResult<T>(response)
 }
+
 
 /**
  * Convert the response to Result

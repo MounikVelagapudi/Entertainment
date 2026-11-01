@@ -1,7 +1,7 @@
 package com.example.popular.domain
 
-import com.example.entertainment.home.MediaItem
-import com.example.entertainment.home.MediaListDomainModel
+import com.example.entertainment.core.home.MediaItem
+import com.example.entertainment.core.home.MediaListDomainModel
 
 data class PopularMoviesDomainModel(
     val page: Int,

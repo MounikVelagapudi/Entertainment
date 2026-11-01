@@ -1,7 +1,7 @@
 package com.example.trending.domain
 
-import com.example.entertainment.home.MediaItem
-import com.example.entertainment.home.MediaListDomainModel
+import com.example.entertainment.core.home.MediaItem
+import com.example.entertainment.core.home.MediaListDomainModel
 
 data class TrendingMoviesDomainModel(
     val page: Int,
@@ -16,6 +16,7 @@ data class TrendingMovie(
     val genreIds: List<Int>,
     override val id: Int,
     val mediaType: String,
+    val overview: String,
     val originalLanguage: String,
     val originalTitle: String,
     val popularity: Double,

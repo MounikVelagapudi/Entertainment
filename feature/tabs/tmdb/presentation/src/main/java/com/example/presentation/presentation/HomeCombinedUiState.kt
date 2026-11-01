@@ -9,7 +9,6 @@ data class HomeCombinedUiState(
     val topRatedMoviesUiState: MediaSectionUiState
 )
 
-// Common extension function to check if any of the uiStates are in loading stage and based on that UI would be updated by calling loadMore
 val HomeCombinedUiState.isAnyLoading: Boolean
     get() = tmdbUiState !is MediaSectionUiState.Loading
             || popularMovieUiState !is MediaSectionUiState.Loading
