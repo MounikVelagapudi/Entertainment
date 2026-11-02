@@ -15,8 +15,8 @@
             <option value="$PROJECT_DIR$/feature/tabs" />
             <option value="$PROJECT_DIR$/feature/tabs/favourite" />
             <option value="$PROJECT_DIR$/feature/tabs/more" />
+            <option value="$PROJECT_DIR$/feature/tabs/pos" />
             <option value="$PROJECT_DIR$/feature/tabs/profile" />
-            <option value="$PROJECT_DIR$/feature/tabs/search" />
             <option value="$PROJECT_DIR$/feature/tabs/tmdb" />
             <option value="$PROJECT_DIR$/feature/tabs/tmdb/popular" />
             <option value="$PROJECT_DIR$/feature/tabs/tmdb/presentation" />

@@ -2,6 +2,8 @@ package com.example.entertainment.profile
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.OutlinedButton
@@ -15,7 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.profile.LoginEvent
 import com.example.profile.ProfileViewModel
-import kotlinx.coroutines.flow.collect
+import com.example.profile.session.SessionLabSection
 
 @Composable
 fun ProfileScreen(
@@ -41,7 +43,7 @@ fun ProfileScreen(
     }
 
 
-    Column(modifier = modifier) {
+    Column(modifier = modifier.verticalScroll(rememberScrollState())) {
 
         TextField(
             value = viewModel.userName,
@@ -66,5 +68,7 @@ fun ProfileScreen(
         ) {
             Text(text = "LOGIN")
         }
+
+        SessionLabSection(modifier = Modifier.padding(14.dp))
     }
 }

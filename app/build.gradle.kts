@@ -92,6 +92,7 @@ dependencies {
     implementation(project(":feature:tabs:more"))
     implementation(project(":feature:tabs:profile"))
     implementation(project(":feature:tabs:favourite"))
+    implementation(project(":feature:tabs:pos"))
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)

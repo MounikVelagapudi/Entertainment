@@ -33,6 +33,7 @@ import androidx.navigation.navArgument
 import com.example.entertainment.core.presentation.reusable_components.MediaResults
 import com.example.entertainment.detailsScreen.MediaDetailScreen
 import com.example.entertainment.favourite.DiscoverScreen
+import com.example.entertainment.pos.presentation.PosScreen
 import com.example.entertainment.more.WatchlistScreen
 import com.example.entertainment.profile.ProfileScreen
 import com.example.entertainment.push.PushNotifications
@@ -164,6 +165,8 @@ fun MainTabsScreen(onNavigateToScreen2: (MediaResults) -> Unit) {
                     )
                 )
 
+                AppDestinations.POS -> PosScreen(modifier = Modifier.padding(innerPadding))
+
                 AppDestinations.WATCHLIST -> WatchlistScreen(
                     modifier = Modifier.padding(
                         innerPadding
@@ -182,6 +185,7 @@ enum class AppDestinations(
 ) {
     HOME("Home", R.drawable.ic_home),
     DISCOVER("Discover", R.drawable.ic_favorite),
+    POS("POS", R.drawable.ic_account_box),
     WATCHLIST("WatchList", icon = R.drawable.ic_bookmark),
     PROFILE("Profile", icon = R.drawable.ic_person),
 }

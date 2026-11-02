@@ -63,6 +63,8 @@ android {
 
 dependencies {
     api(libs.retrofit.core)
+    api(libs.okhttp.core)
+    implementation(libs.retrofit.converter.kotlinx.serialization)
     api(libs.kotlinx.serialization.json)
     api(libs.kotlinx.coroutines.core)
     api(libs.hilt.android)
