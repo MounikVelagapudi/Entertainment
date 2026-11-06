@@ -82,7 +82,11 @@ object PushNotifications {
             .setAutoCancel(true)
             .build()
 
-        NotificationManagerCompat.from(context).notify(notificationId, notification)
+        /* canPost() already checked, but the grant can be revoked in between. */
+        try {
+            NotificationManagerCompat.from(context).notify(notificationId, notification)
+        } catch (_: SecurityException) {
+        }
     }
 
     fun cancel(context: Context, notificationId: Int) {

@@ -1,0 +1,61 @@
+name: Android CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      # gradle/gradle-daemon-jvm.properties pins the daemon to 21; Robolectric sdk=35 needs it too
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # reads .ruby-version; bundler-cache runs bundle install and caches gems
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - name: Cache Robolectric jars
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: robolectric-${{ hashFiles('gradle/libs.versions.toml') }}
+
+      # empty on fork PRs; build falls back to ""
+      - name: Write keys.properties
+        env:
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+        run: echo "TMDB_API_KEY=${TMDB_API_KEY}" > keys.properties
+
+      - name: Lint + unit tests
+        run: bundle exec fastlane test
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            **/build/reports/
+            **/build/test-results/
+          retention-days: 14

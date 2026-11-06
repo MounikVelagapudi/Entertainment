@@ -1,6 +1,7 @@
 # Enhancements: CI/CD with Fastlane + Firebase Test Lab
 
 Status: **not yet enabled**. This is the plan and reference for adding it to this project.
+Step-by-step working list: `CICD checklist.md`. Order: plain Gradle CI first, then Fastlane, then signed builds.
 
 ---
 
@@ -21,6 +22,9 @@ Status: **not yet enabled**. This is the plan and reference for adding it to thi
 | Area | Current state | Gap |
 |---|---|---|
 | CI | None (no `.github/workflows/`) | Nothing checks PRs |
+| POS sources | `feature/tabs/pos/src/` untracked in git | CI would build an empty module and `app` fails |
+| Unit tests | 195 POS tests (Robolectric 4.16, `sdk=35`) | Need JDK 21 on CI and a Robolectric cache |
+| Lint | Never run | First `lintDebug` will likely fail, so a baseline is needed |
 | Fastlane | Not installed, no `fastlane/` | Releases would be manual |
 | API key | `TMDB_API_KEY` read from `keys.properties` (gitignored) into `BuildConfig` in `app` and `core` | CI has no way to get the key yet |
 | `google-services.json` | Committed to git | OK for Firebase (it's an identifier, not a secret), but restrict the key in Google Cloud Console |
@@ -88,8 +92,8 @@ To actually protect a runtime key, you need one of these:
 ## 6. Configuration process (step by step)
 
 ### Step 0: Prerequisites
-- Ruby ≥ 3.1 via `rbenv` or `asdf` (not the macOS system Ruby).
-- JDK 17 (needed for AGP 9.x).
+- Ruby ≥ 3.1 via `rbenv` (`brew install rbenv ruby-build`, `rbenv install 3.3.x`, `rbenv local 3.3.x`). This Mac only has system Ruby 2.6.
+- JDK 21. AGP 9 runs on 17, but Robolectric needs 21 for SDK 35, which the POS tests use. Android Studio's bundled JDK is already 21.
 - A release keystore (`keytool -genkey -v -keystore release.jks -alias entertainment -keyalg RSA -keysize 2048 -validity 10000`). **Back it up.** If you lose it, you can't update the app on Play unless you use Play App Signing.
 - For Play uploads: a Google Cloud service account with "Release manager" access in Play Console. The first AAB must be uploaded manually.
 - For Firebase App Distribution: the Firebase app ID plus a service account with the "Firebase App Distribution Admin" role.
@@ -106,7 +110,8 @@ bundle exec fastlane init   # choose Android, package com.example.entertainment
 bundle exec fastlane add_plugin firebase_app_distribution
 ```
 Commit `Gemfile`, `Gemfile.lock`, `fastlane/Fastfile`, `fastlane/Appfile` and `fastlane/Pluginfile`.
-Add `fastlane/report.xml`, `fastlane/README.md` (generated), `*.jks` and `play-service-account.json` to `.gitignore`.
+Also commit `.ruby-version`.
+Add `fastlane/report.xml`, `fastlane/README.md` (generated), `*.jks` and `*service-account*.json` to `.gitignore`.
 
 ### Step 2: Release signing from environment variables (`app/build.gradle.kts`)
 ```kotlin
@@ -149,7 +154,12 @@ default_platform(:android)
 platform :android do
   desc "PR gate: lint + unit tests across all modules"
   lane :test do
-    gradle(task: "lintDebug testDebugUnitTest")
+    gradle(task: "lintDebug testDebugUnitTest", flags: "--continue")
+  end
+
+  desc "POS module unit tests only"
+  lane :test_pos do
+    gradle(task: ":feature:tabs:pos:testDebugUnitTest")
   end
 
   desc "Debug APK + androidTest APK for Firebase Test Lab"
@@ -205,6 +215,13 @@ Repo → Settings → Secrets and variables → Actions:
 | `PLAY_JSON_KEY` | Play Console service account JSON |
 
 ### Step 6: GitHub Actions workflow (`.github/workflows/android.yml`)
+Start with plain Gradle: replace `bundle exec fastlane test` with `./gradlew lintDebug testDebugUnitTest --continue --stacktrace` and drop the Ruby step. Switch to Fastlane once Steps 1–4 are done. `CICD checklist.md` has the Gradle-only version.
+
+Before the first run:
+- Commit `feature/tabs/pos/src/`.
+- Run `./gradlew lintDebug` locally. If it's noisy, add `lint { baseline = file("lint-baseline.xml") }`, run `./gradlew updateLintBaseline`, and commit the baselines.
+- Set `org.gradle.jvmargs=-Xmx4g` in `gradle.properties`.
+
 ```yaml
 name: Android CI
 
@@ -213,6 +230,9 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -220,21 +240,32 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: 17 }
+        with: { distribution: temurin, java-version: 21 }
       - uses: gradle/actions/setup-gradle@v4      # Gradle + build cache
+      - name: Cache Robolectric jars
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: robolectric-${{ hashFiles('gradle/libs.versions.toml') }}
       - uses: ruby/setup-ruby@v1
         with: { bundler-cache: true }
       - name: Write keys.properties
-        run: echo "TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}" > keys.properties
+        env:
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+        run: echo "TMDB_API_KEY=${TMDB_API_KEY}" > keys.properties
       - run: bundle exec fastlane test
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: test-reports
-          path: "**/build/reports/"
+          path: |
+            **/build/reports/
+            **/build/test-results/
+          retention-days: 14
 
   beta:
     needs: test
@@ -244,14 +275,17 @@ jobs:
       - uses: actions/checkout@v4
         with: { fetch-depth: 20 }                  # for changelog_from_git_commits
       - uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: 17 }
+        with: { distribution: temurin, java-version: 21 }
       - uses: gradle/actions/setup-gradle@v4
       - uses: ruby/setup-ruby@v1
         with: { bundler-cache: true }
       - name: Prepare secrets
+        env:
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
-          echo "TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}" > keys.properties
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > "$RUNNER_TEMP/release.jks"
+          echo "TMDB_API_KEY=${TMDB_API_KEY}" > keys.properties
+          echo "${KEYSTORE_BASE64}" | base64 --decode > "$RUNNER_TEMP/release.jks"
       - run: bundle exec fastlane beta
         env:
           KEYSTORE_PATH: ${{ runner.temp }}/release.jks
@@ -265,9 +299,18 @@ jobs:
 Notes:
 - GitHub doesn't pass secrets to workflows from fork PRs. Since `keys.properties` falls back to `""`, those builds still compile; only tests that need the network would fail.
 - `$RUNNER_TEMP` is wiped after each job, so the keystore never outlives the job.
+- Secrets go through `env:`, never `${{ secrets.* }}` inline in `run:`, which avoids shell injection and quoting problems.
+- A POS-only job can be added with `dorny/paths-filter` on `feature/tabs/pos/**` and `core/**`. Put the filter in the job's `if:`, not in `on.paths`; otherwise a required check that gets skipped stays "pending" forever.
+- Optional coverage: apply Kover to `:feature:tabs:pos` and exclude Hilt, Room and Compose generated code. Gate it with `koverVerifyDebug` at `minBound(60)`. First run `./gradlew :feature:tabs:pos:tasks --group verification` to check that the tasks exist on AGP 9.
+
+Runner pitfalls:
+- `feature/tabs/pos/src/test/resources/robolectric.properties` pins `sdk=35`. Robolectric 4.16 doesn't support compileSdk 37, so leave the pin in place.
+- Platform 37.1 may be missing on the runner. If the download is flaky, add `yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-37.1"` before the Gradle steps.
+- MockK agent warnings on newer JDKs: add `-XX:+EnableDynamicAgentLoading` to the unit tests' `jvmArgs`.
+- `PosSyncSchedulerTest` leaks WorkManager databases. Add an `@After` that calls `WorkManagerTestInitHelper.closeWorkDatabase()`.
 
 ### Step 7: Branch protection
-Settings → Branches → `main` → require the `test` check to pass and require PRs. Without this, CI only tells you something broke; it doesn't stop the merge.
+Settings → Branches → `main` → require the `test` check to pass, require PRs, and block force pushes. The check name only appears in the picker after the workflow has run once. Without this, CI only tells you something broke; it doesn't stop the merge.
 
 ### Step 8: Verify it works
 1. Open a PR that breaks a unit test. The check goes red and merge is blocked.
@@ -362,13 +405,18 @@ Fail-fast ordering (cheap checks before the release build), the Gradle build cac
 
 ## 10. Rollout checklist
 
-- [ ] Install Ruby via rbenv/asdf, add `Gemfile`, run `bundle exec fastlane init`
+Full tickable version: `CICD checklist.md`.
+
+- [ ] Commit `feature/tabs/pos/src/`
+- [ ] Get `./gradlew lintDebug` passing (use a baseline if needed); raise Gradle heap to 4g
+- [ ] Add the Gradle-only `.github/workflows/android.yml` (JDK 21, Robolectric cache)
+- [ ] Install Ruby via rbenv, add `Gemfile`, run `bundle exec fastlane init`
 - [ ] Create a release keystore and back it up; enrol in Play App Signing
 - [ ] Add a release `signingConfig` and a `versionCode` property to `app/build.gradle.kts`
 - [ ] Turn on R8 for release and fix keep rules; check that a local release build runs
 - [ ] Write the `Fastfile` lanes: `test`, `build_for_test_lab`, `beta`, `internal`
 - [ ] Add the GitHub Secrets (§5)
-- [ ] Add `.github/workflows/android.yml`
+- [ ] Switch the workflow's test step to `bundle exec fastlane test`
 - [ ] Turn on branch protection on `main`
 - [ ] Restrict the TMDB key on the provider side; consider a backend proxy
 - [ ] Write real instrumented tests (Compose UI tests for the main screens) so Test Lab has something to run
