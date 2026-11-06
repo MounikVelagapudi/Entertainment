@@ -1,8 +1,9 @@
 package com.example.entertainment.di
 
 import com.example.entertainment.BuildConfig
+import com.example.entertainment.core.di.IoDispatcher
 import com.example.entertainment.home.omdb.OmdbApiService
-import com.example.entertainment.home.HomeScreenApi
+import com.example.entertainment.core.home.HomeScreenApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

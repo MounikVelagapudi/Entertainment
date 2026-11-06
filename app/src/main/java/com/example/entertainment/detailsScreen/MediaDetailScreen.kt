@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -26,9 +25,9 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
-import com.example.entertainment.MediaUiFormatterUtils
-import com.example.entertainment.home.MediaResults
-import com.example.entertainment.ui.preview.PreviewConstants
+import com.example.entertainment.core.MediaUiFormatterUtils
+import com.example.entertainment.core.presentation.reusable_components.MediaResults
+import com.example.entertainment.core.presentation.reusable_components.preview.PreviewConstants
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -111,7 +110,6 @@ fun MediaDetailScreenUI(modifier: Modifier, media: MediaResults) {
                 .fillMaxSize()
                 .padding(6.dp)
         ) {
-            // 1. Movie Poster Image (Height adjusted to leave room for your text)
             AsyncImage(
                 model = MediaUiFormatterUtils.posterUrl(media.imageUrl),
                 modifier = Modifier
@@ -121,17 +119,15 @@ fun MediaDetailScreenUI(modifier: Modifier, media: MediaResults) {
                 contentDescription = "Movie Poster"
             )
 
-            // 2. Movie Title Text
             Text(
                 text = media.title,
                 color = Color.Black,
                 textAlign = TextAlign.Start,
                 fontSize = 11.sp,
-                maxLines = 1, // Prevents text truncation issues
+                maxLines = 1,
                 modifier = Modifier.padding(top = 4.dp, start = 2.dp)
             )
 
-            // 3. Movie Release Date Text
             Text(
                 text = media.releaseDate,
                 color = Color.Blue,

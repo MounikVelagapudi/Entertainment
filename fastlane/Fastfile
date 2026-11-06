@@ -1,0 +1,18 @@
+default_platform(:android)
+
+platform :android do
+  desc "Lint + unit tests for every module (same as CI)"
+  lane :test do
+    gradle(task: "lintDebug testDebugUnitTest", flags: "--continue --stacktrace")
+  end
+
+  desc "Unit tests for the POS module only"
+  lane :test_pos do
+    gradle(task: ":feature:tabs:pos:testDebugUnitTest")
+  end
+
+  desc "Debug APK"
+  lane :build_debug do
+    gradle(task: "assembleDebug")
+  end
+end
