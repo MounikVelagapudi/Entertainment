@@ -89,6 +89,7 @@ dependencies {
     implementation(project(":feature:tabs:tmdb:toprated"))
     implementation(project(":feature:tabs:tmdb:trending"))
     implementation(project(":feature:tabs:tmdb:presentation"))
+    implementation(project(":feature:tabs:tmdb:reviews"))
     implementation(project(":feature:tabs:more"))
     implementation(project(":feature:tabs:profile"))
     implementation(project(":feature:tabs:favourite"))

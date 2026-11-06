@@ -11,6 +11,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -34,6 +35,7 @@ import com.example.entertainment.core.presentation.reusable_components.preview.P
 fun MediaDetailScreen(
     mediaId: Int,
     onBackClick: () -> Unit,
+    onReviewsClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: MediaDetailsViewModel = hiltViewModel()
 ) {
@@ -52,7 +54,7 @@ fun MediaDetailScreen(
         }
 
         is MediaDetailsUiState.Success -> {
-            MediaDetailScreenContent(modifier, result.data, onBackClick)
+            MediaDetailScreenContent(modifier, result.data, onBackClick, onReviewsClick)
         }
 
         is MediaDetailsUiState.Error -> {
@@ -70,6 +72,7 @@ fun MediaDetailScreenContent(
     modifier: Modifier = Modifier,
     media: MediaResults,
     onBackClick: () -> Unit,
+    onReviewsClick: () -> Unit = {},
 ) {
     Scaffold(
         modifier = modifier,
@@ -81,6 +84,11 @@ fun MediaDetailScreenContent(
                         onClick = onBackClick
                     ) {
                         Text(text = "BACK")
+                    }
+                },
+                actions = {
+                    TextButton(onClick = onReviewsClick) {
+                        Text(text = "Reviews")
                     }
                 }
             )
@@ -142,8 +150,7 @@ fun MediaDetailScreenUI(modifier: Modifier, media: MediaResults) {
 @Preview(showBackground = true)
 @Composable
 fun MediaDetailScreenContentPreview() {
-    MediaDetailScreenContent(media = PreviewConstants.previewMovie) {
-    }
+    MediaDetailScreenContent(media = PreviewConstants.previewMovie, onBackClick = {})
 }
 
 @Preview(showBackground = true)

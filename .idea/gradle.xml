@@ -20,6 +20,7 @@
             <option value="$PROJECT_DIR$/feature/tabs/tmdb" />
             <option value="$PROJECT_DIR$/feature/tabs/tmdb/popular" />
             <option value="$PROJECT_DIR$/feature/tabs/tmdb/presentation" />
+            <option value="$PROJECT_DIR$/feature/tabs/tmdb/reviews" />
             <option value="$PROJECT_DIR$/feature/tabs/tmdb/toprated" />
             <option value="$PROJECT_DIR$/feature/tabs/tmdb/trending" />
           </set>

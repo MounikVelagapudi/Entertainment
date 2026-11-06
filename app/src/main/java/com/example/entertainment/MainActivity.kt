@@ -39,6 +39,7 @@ import com.example.entertainment.profile.ProfileScreen
 import com.example.entertainment.push.PushNotifications
 import com.example.entertainment.push.RequestNotificationPermission
 import com.example.presentation.presentation.performance.TrackJank
+import com.example.reviews.presentation.MovieReviewsScreen
 import com.example.entertainment.ui.theme.EntertainmentTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -86,6 +87,8 @@ private const val ROUTE_MAIN = "main"
 private const val ARG_MEDIA_ID = "mediaId"
 private const val ROUTE_SCREEN2_BASE = "screen2"
 private const val ROUTE_SCREEN2 = "$ROUTE_SCREEN2_BASE/{$ARG_MEDIA_ID}"
+private const val ROUTE_REVIEWS_BASE = "reviews"
+private const val ROUTE_REVIEWS = "$ROUTE_REVIEWS_BASE/{$ARG_MEDIA_ID}"
 
 
 @PreviewScreenSizes
@@ -121,10 +124,34 @@ fun EntertainmentApp(
                 navArgument(ARG_MEDIA_ID) { type = NavType.StringType }
             )
         ) { backStackEntry ->
-            val mediaId = backStackEntry.arguments?.getString(ARG_MEDIA_ID).orEmpty()
+            val mediaId = backStackEntry.arguments?.getString(ARG_MEDIA_ID)?.toIntOrNull()
+            if (mediaId == null) {
+                LaunchedEffect(Unit) { navController.popBackStack() }
+                return@composable
+            }
 
             MediaDetailScreen(
-                mediaId = Integer.valueOf(mediaId),
+                mediaId = mediaId,
+                onBackClick = { navController.popBackStack() },
+                onReviewsClick = {
+                    navController.navigate("$ROUTE_REVIEWS_BASE/$mediaId") { launchSingleTop = true }
+                }
+            )
+        }
+        composable(
+            route = ROUTE_REVIEWS,
+            arguments = listOf(
+                navArgument(ARG_MEDIA_ID) { type = NavType.IntType }
+            )
+        ) { backStackEntry ->
+            val args = backStackEntry.arguments
+            if (args == null || !args.containsKey(ARG_MEDIA_ID)) {
+                LaunchedEffect(Unit) { navController.popBackStack() }
+                return@composable
+            }
+
+            MovieReviewsScreen(
+                movieId = args.getInt(ARG_MEDIA_ID),
                 onBackClick = { navController.popBackStack() }
             )
         }
