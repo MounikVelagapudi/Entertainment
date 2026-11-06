@@ -5,6 +5,9 @@
 - [ ] Use `isolation: worktree` so two agents work on separate branches without stepping on each other (e.g. one on the search tab, one on CI)
 - [ ] Try a Plan agent to design a feature, then a separate agent to implement it, then `/code-review` on the result
 - [ ] Note token cost and time against a single-agent run, for the multi-agent interview talking points
+  - 2026-11-05: first `/dev-cycle` run (Movie Reviews): dev ~61k tokens/2.6 min, reviewer ~25k/0.6 min, QA ~43k/2.4 min. Single-agent baseline still to measure.
+  - 2026-11-05: second run (fix 3 review minors, 2 files): dev ~14k/26 s, reviewer ~12k/20 s, QA ~13k/28 s, so about 39k for a tiny fix. Pipeline overhead dominates small tasks.
+  - 2026-11-05: third run (details id crash, 1 file) with reviewer + QA on sonnet: dev ~12k/29 s, reviewer ~11k/20 s, QA ~9k/15 s, about 32k total. QA skipped test counts; orchestrator had to verify.
 
 ## 2. Implement Enhancements.md
 Follow the rollout checklist in [Enhancements.md](Enhancements.md#10-rollout-checklist).

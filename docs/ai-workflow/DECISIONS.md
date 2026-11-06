@@ -29,3 +29,10 @@ Append-only. Non-obvious calls only. Format: `.claude/workflow/templates/log-ent
 - **Alternatives:** wait for a local Ruby and run `fastlane init`; Ruby 3.4.
 - **Why:** `init` only generates those two files, and a hand-written version stays minimal. On Ruby 3.4, gems that fastlane depends on (e.g. `abbrev`, `mutex_m`) moved out of the default set. The branch isn't pushed, so switching the workflow early is free as long as `Gemfile.lock` is committed before the first push.
 - **Task:** CI/CD Phase 2: Fastlane setup (files only)
+
+## 2026-11-06 — Test builders: Kotlin default-arg functions for data, builder classes for the class under test
+- **Context:** User asked for all mocking/object creation out of test classes, using the builder pattern where possible.
+- **Decision:** Data objects use `aThing(field = ...)` functions with named, defaulted params (Kotlin's idiomatic test-data builder). Classes under test use a `<Class>Builder` with `withX()` methods returning `this` and `build()`, owning the mocks/fakes.
+- **Alternatives:** Java-style fluent builder classes for every data object; one shared "fixture" object per module.
+- **Why:** Default args give the same readability as a fluent data builder with no boilerplate. SUT builders keep mock wiring in one place, so constructor changes touch one file instead of every test. Tests that check a model's own constructor defaults still call the constructor directly, otherwise they'd test the builder's defaults.
+- **Task:** Unit tests: test-data builders + per-class builders
