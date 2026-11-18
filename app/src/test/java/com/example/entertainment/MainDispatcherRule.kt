@@ -9,9 +9,8 @@ import kotlinx.coroutines.test.setMain
 import org.junit.rules.TestWatcher
 import org.junit.runner.Description
 
-// viewModelScope launches on Dispatchers.Main, which doesn't exist on the JVM test runner.
-// This rule swaps it for a TestDispatcher before each test and restores it after, so any
-// ViewModel test can just apply this rule instead of repeating the setMain/resetMain dance.
+/* viewModelScope needs Dispatchers.Main, which doesn't exist on the JVM test runner --
+   this rule swaps in a TestDispatcher per test instead of repeating setMain/resetMain everywhere. */
 @OptIn(ExperimentalCoroutinesApi::class)
 class MainDispatcherRule(
     private val testDispatcher: TestDispatcher = StandardTestDispatcher()

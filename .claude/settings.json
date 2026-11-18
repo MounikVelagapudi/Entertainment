@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "ask": [
+      "Read(keys.properties)",
+      "Read(local.properties)",
+      "Edit(keys.properties)",
+      "Edit(local.properties)",
+      "Edit(**/google-services.json)",
+      "Edit(**/*.jks)",
+      "Edit(**/*.keystore)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Edit|Write|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/sensitive-guard.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

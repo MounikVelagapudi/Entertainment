@@ -1,11 +1,11 @@
 package com.example.entertainment.di
 
-import com.example.entertainment.home.popularMovies.data.PopularMoviesRepoImpl
-import com.example.entertainment.home.popularMovies.domain.PopularMoviesRepo
-import com.example.entertainment.home.topRated.topRated.data.TopRatedRepoImpl
-import com.example.entertainment.home.topRated.topRated.domain.TopRatedRepo
-import com.example.entertainment.home.trendingMovies.data.TrendingRepoImpl
-import com.example.entertainment.home.trendingMovies.domain.TrendingRepo
+import com.example.popular.data.PopularMoviesRepoImpl
+import com.example.popular.domain.PopularMoviesRepo
+import com.example.trending.data.TrendingRepoImpl
+import com.example.trending.domain.TrendingRepo
+import com.example.toprated.data.TopRatedRepoImpl
+import com.example.toprated.domain.TopRatedRepo
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
