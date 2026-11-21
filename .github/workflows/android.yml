@@ -30,9 +30,10 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      # reads .ruby-version; bundler-cache runs bundle install and caches gems
+      # newer runner images only ship the latest patch, so pin the series, not .ruby-version's 3.3.6
       - uses: ruby/setup-ruby@v1
         with:
+          ruby-version: '3.3'
           bundler-cache: true
 
       - name: Cache Robolectric jars

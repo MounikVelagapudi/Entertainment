@@ -223,3 +223,8 @@ Checked: YAML parses, `ruby -c` passes on `Fastfile` and `Gemfile`. Not run.
 - **MockK agent warnings** on newer JDKs: add `-XX:+EnableDynamicAgentLoading` to the unit tests' `jvmArgs` if they show up.
 - **Leaked WorkManager databases** in the tests: `PosSyncSchedulerTest` needs an `@After` that calls `WorkManagerTestInitHelper.closeWorkDatabase()`.
 - **Update `Enhancements.md`** to match: JDK 21, secrets through `env:`, and the Robolectric cache step.
+
+### 2026-11-18: first runner failure, Ruby version (Claude)
+- The first PR run failed at `ruby/setup-ruby@v1`: `Unavailable version 3.3.6 for ruby on ubuntu-26.04`. Newer runner images only build the latest patch of each series (3.3.13 at the time).
+- Fix: `ruby-version: '3.3'` in the workflow, so CI always takes the latest 3.3.x. `.ruby-version` stays `3.3.6` for local rbenv. `Gemfile.lock` has no `RUBY VERSION` pin, so nothing else changes.
+- Not yet verified on the runner.
