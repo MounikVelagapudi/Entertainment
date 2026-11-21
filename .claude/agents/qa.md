@@ -13,6 +13,10 @@ A brief built from `.claude/workflow/templates/qa-task.md`, including the Review
 ## Rules
 - Only create or edit files under `src/test/` or `src/androidTest/`. If production code is wrong, report it — don't fix it.
 - Follow the existing test setup in the module (JUnit, Robolectric, coroutines-test, fakes over mocks where the module already does that).
+- Keep test classes to arrange / act / assert. No mocks or object construction in the test class:
+  - test data → `testdata/<Area>TestData.kt` builders with named, defaulted params (`aTopRatedMovie(id = 2)`).
+  - class under test + its mocks/fakes → `<ClassUnderTest>Builder.kt` next to the test, with `withX(...)` setup and `build()`.
+  - Exception: tests that check a model's own constructor defaults call the constructor directly.
 - Cover: the happy path, the edge cases from the brief, and each risky path the Reviewer flagged.
 
 ## Token budget

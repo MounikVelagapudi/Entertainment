@@ -2,15 +2,10 @@ package com.example.entertainment.pos.presentation
 
 import app.cash.turbine.test
 import com.example.entertainment.pos.MainDispatcherRule
-import com.example.entertainment.pos.domain.model.CartLine
-import com.example.entertainment.pos.domain.model.PaymentMethod
-import com.example.entertainment.pos.domain.model.Product
 import com.example.entertainment.pos.domain.model.SyncStatus
-import com.example.entertainment.pos.domain.model.Transaction
-import com.example.entertainment.pos.fakes.FakePosRepository
+import com.example.entertainment.pos.fakes.givenTransactions
+import com.example.entertainment.pos.testdata.aTransaction
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -25,32 +20,14 @@ class ActivityViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private val repository = FakePosRepository()
-
-    private fun tx(id: String, status: SyncStatus) = Transaction(
-        id = id,
-        lines = listOf(CartLine(Product("012345678905", "Popcorn (L)", 899), 1)),
-        totalCents = 899,
-        createdAtMillis = 0,
-        status = status,
-        serverReference = null,
-        paymentMethod = PaymentMethod.CASH,
-    )
-
-    private fun seedOneOfEach() {
-        repository.saved.value = SyncStatus.entries.map { tx(it.name.lowercase(), it) }
-    }
-
-    private fun TestScope.viewModel() = ActivityViewModel(repository).also { vm ->
-        backgroundScope.launch { vm.uiState.collect {} }
-    }
+    private val given = ActivityViewModelBuilder()
+    private val repository = given.repository
 
     private fun ActivityViewModel.ids() = uiState.value.transactions.map { it.id }
 
     @Test
     fun `given no filter then every sale is listed in repository order`() = runTest {
-        seedOneOfEach()
-        val vm = viewModel()
+        val vm = given.withOneSalePerStatus().build(this)
         advanceUntilIdle()
 
         assertEquals(ActivityFilter.ALL, vm.uiState.value.filter)
@@ -59,8 +36,8 @@ class ActivityViewModelTest {
 
     @Test
     fun `given the attention filter then conflicts failures and stuck drafts are shown`() = runTest {
-        seedOneOfEach()
-        val vm = viewModel()
+        val vm = given.withOneSalePerStatus().build(this)
+
         vm.onFilterSelected(ActivityFilter.ATTENTION); advanceUntilIdle()
 
         assertEquals(ActivityFilter.ATTENTION, vm.uiState.value.filter)
@@ -69,8 +46,7 @@ class ActivityViewModelTest {
 
     @Test
     fun `given each narrow filter then only matching statuses come through`() = runTest {
-        seedOneOfEach()
-        val vm = viewModel()
+        val vm = given.withOneSalePerStatus().build(this)
 
         vm.onFilterSelected(ActivityFilter.PENDING); advanceUntilIdle()
         assertEquals(listOf("pending"), vm.ids())
@@ -92,11 +68,11 @@ class ActivityViewModelTest {
 
     @Test
     fun `given a filter is active when the repo changes then the list updates live`() = runTest {
-        val vm = viewModel()
+        val vm = given.build(this)
         vm.onFilterSelected(ActivityFilter.PENDING); advanceUntilIdle()
         assertTrue(vm.ids().isEmpty())
 
-        repository.saved.value = listOf(tx("a", SyncStatus.PENDING)); advanceUntilIdle()
+        repository.givenTransactions(aTransaction(id = "a", status = SyncStatus.PENDING)); advanceUntilIdle()
         assertEquals(listOf("a"), vm.ids())
 
         repository.update("a") { it.copy(status = SyncStatus.SYNCED) }; advanceUntilIdle()
@@ -105,7 +81,7 @@ class ActivityViewModelTest {
 
     @Test
     fun `given sync now is tapped then the repo is asked to sync and a message shows`() = runTest {
-        val vm = viewModel()
+        val vm = given.build(this)
         val before = repository.syncRequests
 
         vm.onSyncNow(); advanceUntilIdle()
@@ -116,12 +92,13 @@ class ActivityViewModelTest {
 
     @Test
     fun `given synced sales when pruned then only synced rows go and the count is reported`() = runTest {
-        repository.saved.value = listOf(
-            tx("a", SyncStatus.SYNCED),
-            tx("b", SyncStatus.SYNCED),
-            tx("c", SyncStatus.CONFLICT),
-        )
-        val vm = viewModel()
+        val vm = given
+            .withTransactions(
+                aTransaction(id = "a", status = SyncStatus.SYNCED),
+                aTransaction(id = "b", status = SyncStatus.SYNCED),
+                aTransaction(id = "c", status = SyncStatus.CONFLICT),
+            )
+            .build(this)
 
         vm.onPruneSynced(); advanceUntilIdle()
 
@@ -131,14 +108,16 @@ class ActivityViewModelTest {
 
     @Test
     fun `given nothing to prune then the message says zero`() = runTest {
-        val vm = viewModel()
+        val vm = given.build(this)
+
         vm.onPruneSynced(); advanceUntilIdle()
+
         assertEquals("Removed 0 synced sales", vm.uiState.value.message)
     }
 
     @Test
     fun `given a fresh screen then the first emitted state is empty with no message`() = runTest {
-        ActivityViewModel(repository).uiState.test {
+        given.buildCold().uiState.test {
             val first = awaitItem()
             assertTrue(first.transactions.isEmpty())
             assertNull(first.message)

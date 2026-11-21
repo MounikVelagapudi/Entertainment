@@ -24,4 +24,5 @@ Before reading or changing API keys, tokens, credentials, signing config, `keys.
 
 ## Code style
 - Comments: default to none. When needed, a terse `/* ... */` WHY note; KDoc only on public API.
+- Tests: data from `testdata/*TestData.kt` builders, class under test from `<Class>Builder.kt`; no mocks or object construction inside test classes.
 - Don't commit or push unless asked.

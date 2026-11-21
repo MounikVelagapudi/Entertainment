@@ -2,19 +2,13 @@ package com.example.entertainment.pos.presentation
 
 import androidx.lifecycle.SavedStateHandle
 import com.example.entertainment.pos.MainDispatcherRule
-import com.example.entertainment.pos.domain.ConflictResolver
-import com.example.entertainment.pos.domain.model.CartLine
-import com.example.entertainment.pos.domain.model.PaymentMethod
-import com.example.entertainment.pos.domain.model.PaymentResult
-import com.example.entertainment.pos.domain.model.Product
 import com.example.entertainment.pos.domain.model.RefundResult
 import com.example.entertainment.pos.domain.model.SyncStatus
-import com.example.entertainment.pos.fakes.FakePaymentProcessor
-import com.example.entertainment.pos.fakes.FakePosRepository
+import com.example.entertainment.pos.fakes.givenSale
+import com.example.entertainment.pos.fakes.transaction
+import com.example.entertainment.pos.testdata.TestProducts.HOT_DOG
+import com.example.entertainment.pos.testdata.aCartLine
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -30,34 +24,28 @@ class TransactionDetailViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private val repository = FakePosRepository()
-    private val payments = FakePaymentProcessor()
-    private val resolver = ConflictResolver(repository, payments)
+    private val given = TransactionDetailViewModelBuilder()
+    private val repository = given.repository
+    private val payments = given.payments
 
-    private suspend fun sale(status: SyncStatus = SyncStatus.CONFLICT): String {
-        val draft = repository.createDraft(listOf(CartLine(Product("490000000016", "Hot Dog", 599), 2)), PaymentMethod.CARD_TERMINAL)
-        repository.completePayment(draft.id, PaymentResult.Approved("pi_1", "4242"))
-        repository.update(draft.id) { it.copy(status = status, conflictBarcode = "490000000016") }
-        return draft.id
-    }
+    /* Two hot dogs on the card terminal, flagged on the hot dog barcode. */
+    private suspend fun sale(status: SyncStatus = SyncStatus.CONFLICT) = repository.givenSale(
+        status = status,
+        lines = listOf(aCartLine(HOT_DOG, quantity = 2)),
+        conflictBarcode = HOT_DOG.barcode,
+    )
 
-    private fun TestScope.viewModel(id: String) =
-        TransactionDetailViewModel(SavedStateHandle(mapOf(TransactionDetailViewModel.ARG_ID to id)), repository, resolver).also { vm ->
-            backgroundScope.launch { vm.transaction.collect {} }
-            backgroundScope.launch { vm.events.collect {} }
-        }
-
-    private fun status(id: String) = repository.saved.value.single { it.id == id }.status
+    private fun status(id: String) = repository.transaction(id).status
 
     @Test(expected = IllegalStateException::class)
     fun `given no transaction id in saved state then construction fails`() {
-        TransactionDetailViewModel(SavedStateHandle(), repository, resolver)
+        given.build(SavedStateHandle())
     }
 
     @Test
     fun `given a saved sale then the transaction is observed live`() = runTest {
         val id = sale(SyncStatus.PENDING)
-        val vm = viewModel(id)
+        val vm = given.build(this, id)
         advanceUntilIdle()
         assertEquals(SyncStatus.PENDING, vm.transaction.value!!.status)
 
@@ -70,8 +58,9 @@ class TransactionDetailViewModelTest {
 
     @Test
     fun `given a conflict then the item name is resolved from the conflicting barcode`() = runTest {
-        val vm = viewModel(sale())
+        val vm = given.build(this, sale())
         advanceUntilIdle()
+
         assertEquals("Hot Dog", vm.transaction.value!!.conflictItemName)
     }
 
@@ -79,7 +68,7 @@ class TransactionDetailViewModelTest {
     fun `given events logged for the sale then the timeline shows only its events`() = runTest {
         val id = sale()
         repository.logEvent("other", "NOISE")
-        val vm = viewModel(id)
+        val vm = given.build(this, id)
 
         repository.logEvent(id, "SYNC_ATTEMPT", "run 1")
         repository.logEvent(id, "CONFLICT", "INVENTORY_EXHAUSTED")
@@ -91,7 +80,7 @@ class TransactionDetailViewModelTest {
 
     @Test
     fun `given an unknown id then transaction stays null and actions are no-ops`() = runTest {
-        val vm = viewModel("missing")
+        val vm = given.build(this, "missing")
         advanceUntilIdle()
 
         vm.onVoidAndRefund(); advanceUntilIdle()
@@ -104,7 +93,7 @@ class TransactionDetailViewModelTest {
     @Test
     fun `given a conflict when void and refund succeeds then it is voided and the reference shown`() = runTest {
         val id = sale()
-        val vm = viewModel(id)
+        val vm = given.build(this, id)
         advanceUntilIdle()
 
         vm.onVoidAndRefund(); advanceUntilIdle()
@@ -117,8 +106,7 @@ class TransactionDetailViewModelTest {
     @Test
     fun `given a conflict when the refund fails then the error shows and the sale stays in conflict`() = runTest {
         val id = sale()
-        payments.nextRefund = RefundResult.Error("Refund failed (500)")
-        val vm = viewModel(id)
+        val vm = given.withRefundResult(RefundResult.Error("Refund failed (500)")).build(this, id)
         advanceUntilIdle()
 
         vm.onVoidAndRefund(); advanceUntilIdle()
@@ -130,8 +118,8 @@ class TransactionDetailViewModelTest {
     @Test
     fun `given a resolution in flight then resolving is true and extra taps are ignored`() = runTest {
         val id = sale()
-        payments.gate = CompletableDeferred()
-        val vm = viewModel(id)
+        val refundGate = given.holdRefunds()
+        val vm = given.build(this, id)
         advanceUntilIdle()
 
         vm.onVoidAndRefund(); advanceUntilIdle()
@@ -140,7 +128,7 @@ class TransactionDetailViewModelTest {
         vm.onShipToHome()
         advanceUntilIdle()
 
-        payments.gate!!.complete(Unit); advanceUntilIdle()
+        refundGate.complete(Unit); advanceUntilIdle()
         assertEquals(1, payments.refunds.size)
         assertEquals(SyncStatus.VOIDED, status(id))
         assertFalse(vm.isResolving.value)
@@ -149,22 +137,21 @@ class TransactionDetailViewModelTest {
     @Test
     fun `given an old message when a new resolution starts then the message is cleared`() = runTest {
         val id = sale()
-        payments.nextRefund = RefundResult.Error("Network error, try again")
-        val vm = viewModel(id)
+        val vm = given.withRefundResult(RefundResult.Error("Network error, try again")).build(this, id)
         advanceUntilIdle()
         vm.onVoidAndRefund(); advanceUntilIdle()
         assertEquals("Network error, try again", vm.message.value)
 
-        payments.gate = CompletableDeferred()
+        val refundGate = given.holdRefunds()
         vm.onVoidAndRefund(); advanceUntilIdle()
         assertNull(vm.message.value)
-        payments.gate!!.complete(Unit); advanceUntilIdle()
+        refundGate.complete(Unit); advanceUntilIdle()
     }
 
     @Test
     fun `given a conflict when manager override is used then it is requeued and a sync is asked for`() = runTest {
         val id = sale()
-        val vm = viewModel(id)
+        val vm = given.build(this, id)
         advanceUntilIdle()
         val before = repository.syncRequests
 
@@ -179,7 +166,7 @@ class TransactionDetailViewModelTest {
     @Test
     fun `given a conflict when ship to home is used then the conflict closes without a refund`() = runTest {
         val id = sale()
-        val vm = viewModel(id)
+        val vm = given.build(this, id)
         advanceUntilIdle()
 
         vm.onShipToHome(); advanceUntilIdle()

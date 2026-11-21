@@ -1,6 +1,9 @@
 package com.example.entertainment.pos.data.remote
 
 import com.example.entertainment.pos.data.remote.MockBackend.Companion.HOT_DOG_BARCODE
+import com.example.entertainment.pos.testdata.TestProducts.POPCORN
+import com.example.entertainment.pos.testdata.aMockBackend
+import com.example.entertainment.pos.testdata.aTransactionItemDto
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -11,9 +14,7 @@ import org.junit.Test
 
 class MockBackendTest {
 
-    private val backend = MockBackend(latencyMs = 0, failureRatePercent = 0, initialStock = mapOf(HOT_DOG_BARCODE to 1), defaultStock = 99)
-
-    private fun item(barcode: String, qty: Int) = TransactionItemDto(barcode, "Item", 100, qty)
+    private val backend = aMockBackend()
 
     @Test
     fun `given the injected constructor then defaults match the README`() {
@@ -21,46 +22,54 @@ class MockBackendTest {
         assertEquals(800L, defaults.latencyMs.value)
         assertEquals(20, defaults.failureRatePercent.value)
         assertEquals(1, defaults.stockOf(HOT_DOG_BARCODE))
-        assertEquals(99, defaults.stockOf("012345678905"))
+        assertEquals(99, defaults.stockOf(POPCORN.barcode))
     }
 
     @Test
     fun `given enough stock when reserving then it decrements and returns null`() {
-        assertNull(backend.tryReserve(listOf(item("012345678905", 3)), override = false))
-        assertEquals(96, backend.stockOf("012345678905"))
+        assertNull(backend.tryReserve(listOf(aTransactionItemDto(POPCORN.barcode, 3)), override = false))
+        assertEquals(96, backend.stockOf(POPCORN.barcode))
     }
 
     @Test
     fun `given quantity above stock when reserving then that barcode is returned`() {
-        assertEquals(HOT_DOG_BARCODE, backend.tryReserve(listOf(item(HOT_DOG_BARCODE, 2)), override = false))
+        assertEquals(HOT_DOG_BARCODE, backend.tryReserve(listOf(aTransactionItemDto(HOT_DOG_BARCODE, 2)), override = false))
         assertEquals(1, backend.stockOf(HOT_DOG_BARCODE))
     }
 
     @Test
     fun `given one short item in a multi item sale then nothing is decremented`() {
-        val short = backend.tryReserve(listOf(item("012345678905", 1), item(HOT_DOG_BARCODE, 2)), override = false)
+        val short = backend.tryReserve(
+            listOf(aTransactionItemDto(POPCORN.barcode, 1), aTransactionItemDto(HOT_DOG_BARCODE, 2)),
+            override = false,
+        )
 
         assertEquals(HOT_DOG_BARCODE, short)
-        assertEquals(99, backend.stockOf("012345678905"))
+        assertEquals(99, backend.stockOf(POPCORN.barcode))
         assertEquals(1, backend.stockOf(HOT_DOG_BARCODE))
     }
 
     @Test
     fun `given several short items then the first one in the sale is reported`() {
-        backend.adjustStock("012345678905", -99)
-        val short = backend.tryReserve(listOf(item("012345678905", 1), item(HOT_DOG_BARCODE, 5)), override = false)
-        assertEquals("012345678905", short)
+        backend.adjustStock(POPCORN.barcode, -99)
+
+        val short = backend.tryReserve(
+            listOf(aTransactionItemDto(POPCORN.barcode, 1), aTransactionItemDto(HOT_DOG_BARCODE, 5)),
+            override = false,
+        )
+
+        assertEquals(POPCORN.barcode, short)
     }
 
     @Test
     fun `given exact stock when reserving then it reaches zero`() {
-        assertNull(backend.tryReserve(listOf(item(HOT_DOG_BARCODE, 1)), override = false))
+        assertNull(backend.tryReserve(listOf(aTransactionItemDto(HOT_DOG_BARCODE, 1)), override = false))
         assertEquals(0, backend.stockOf(HOT_DOG_BARCODE))
     }
 
     @Test
     fun `given override then stock can go negative`() {
-        assertNull(backend.tryReserve(listOf(item(HOT_DOG_BARCODE, 3)), override = true))
+        assertNull(backend.tryReserve(listOf(aTransactionItemDto(HOT_DOG_BARCODE, 3)), override = true))
         assertEquals(-2, backend.stockOf(HOT_DOG_BARCODE))
     }
 
@@ -74,11 +83,15 @@ class MockBackendTest {
 
     @Test
     fun `given changed stock when reset then the initial seed is back`() {
-        backend.tryReserve(listOf(item(HOT_DOG_BARCODE, 1), item("012345678905", 10)), override = false)
+        backend.tryReserve(
+            listOf(aTransactionItemDto(HOT_DOG_BARCODE, 1), aTransactionItemDto(POPCORN.barcode, 10)),
+            override = false,
+        )
+
         backend.resetStock()
 
         assertEquals(mapOf(HOT_DOG_BARCODE to 1), backend.stock.value)
-        assertEquals(99, backend.stockOf("012345678905"))
+        assertEquals(99, backend.stockOf(POPCORN.barcode))
     }
 
     @Test
@@ -100,7 +113,9 @@ class MockBackendTest {
         repeat(threads) {
             pool.execute {
                 start.await()
-                if (backend.tryReserve(listOf(item(HOT_DOG_BARCODE, 1)), override = false) == null) wins.incrementAndGet()
+                if (backend.tryReserve(listOf(aTransactionItemDto(HOT_DOG_BARCODE, 1)), override = false) == null) {
+                    wins.incrementAndGet()
+                }
             }
         }
         start.countDown()
